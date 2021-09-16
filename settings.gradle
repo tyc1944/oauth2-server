@@ -1,0 +1,3 @@
+rootProject.name = 'auth-server-2.4'
+include 'authorize-server'
+
