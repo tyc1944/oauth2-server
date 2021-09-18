@@ -8,6 +8,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.keygen.Base64StringKeyGenerator;
 import org.springframework.security.crypto.keygen.StringKeyGenerator;
 import org.springframework.security.oauth2.core.*;
@@ -80,9 +81,9 @@ public class OAuth2ResourceOwnerPasswordAuthenticationProvider implements Authen
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 
-        OAuth2ResourceOwnerPasswordAuthenticationToken resouceOwnerPasswordAuthentication = (OAuth2ResourceOwnerPasswordAuthenticationToken) authentication;
+        OAuth2ResourceOwnerPasswordAuthenticationToken resourceOwnerPasswordAuthentication = (OAuth2ResourceOwnerPasswordAuthenticationToken) authentication;
 
-        OAuth2ClientAuthenticationToken clientPrincipal = getAuthenticatedClientElseThrowInvalidClient(resouceOwnerPasswordAuthentication);
+        OAuth2ClientAuthenticationToken clientPrincipal = getAuthenticatedClientElseThrowInvalidClient(resourceOwnerPasswordAuthentication);
 
         RegisteredClient registeredClient = clientPrincipal.getRegisteredClient();
 
@@ -90,26 +91,26 @@ public class OAuth2ResourceOwnerPasswordAuthenticationProvider implements Authen
             throw new OAuth2AuthenticationException(OAuth2ErrorCodes.UNAUTHORIZED_CLIENT);
         }
 
-        Map<String, Object> additionalParameters = resouceOwnerPasswordAuthentication.getAdditionalParameters();
+        Map<String, Object> additionalParameters = resourceOwnerPasswordAuthentication.getAdditionalParameters();
         String username = (String) additionalParameters.get(OAuth2ParameterNames.USERNAME);
         String password = (String) additionalParameters.get(OAuth2ParameterNames.PASSWORD);
 
         try {
             UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(username, password);
             LOGGER.debug("got usernamePasswordAuthenticationToken=" + usernamePasswordAuthenticationToken);
-
+            OAuth2ClientAuthenticationToken contentToken = (OAuth2ClientAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+            contentToken.setDetails(additionalParameters);
             Authentication usernamePasswordAuthentication = authenticationManager.authenticate(usernamePasswordAuthenticationToken);
-            Set<String> authorizedScopes = registeredClient.getScopes();        // Default to configured scopes
-
-            if (!CollectionUtils.isEmpty(resouceOwnerPasswordAuthentication.getScopes())) {
-                Set<String> unauthorizedScopes = resouceOwnerPasswordAuthentication.getScopes().stream()
+            Set<String> authorizedScopes = registeredClient.getScopes();
+            if (!CollectionUtils.isEmpty(resourceOwnerPasswordAuthentication.getScopes())) {
+                Set<String> unauthorizedScopes = resourceOwnerPasswordAuthentication.getScopes().stream()
                         .filter(requestedScope -> !registeredClient.getScopes().contains(requestedScope))
                         .collect(Collectors.toSet());
                 if (!CollectionUtils.isEmpty(unauthorizedScopes)) {
                     throw new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_SCOPE);
                 }
 
-                authorizedScopes = new LinkedHashSet<>(resouceOwnerPasswordAuthentication.getScopes());
+                authorizedScopes = new LinkedHashSet<>(resourceOwnerPasswordAuthentication.getScopes());
             }
 
             String issuer = this.providerSettings != null ? this.providerSettings.getIssuer() : null;
@@ -124,7 +125,7 @@ public class OAuth2ResourceOwnerPasswordAuthenticationProvider implements Authen
                     .authorizedScopes(authorizedScopes)
                     .tokenType(OAuth2TokenType.ACCESS_TOKEN)
                     .authorizationGrantType(AuthorizationGrantType.PASSWORD)
-                    .authorizationGrant(resouceOwnerPasswordAuthentication)
+                    .authorizationGrant(resourceOwnerPasswordAuthentication)
                     .put(USERNAME_PASSWORD_AUTHENTICATION_KEY, usernamePasswordAuthentication)
                     .build();
 
@@ -176,17 +177,13 @@ public class OAuth2ResourceOwnerPasswordAuthenticationProvider implements Authen
     }
 
     private OAuth2ClientAuthenticationToken getAuthenticatedClientElseThrowInvalidClient(Authentication authentication) {
-
         OAuth2ClientAuthenticationToken clientPrincipal = null;
-
         if (OAuth2ClientAuthenticationToken.class.isAssignableFrom(authentication.getPrincipal().getClass())) {
             clientPrincipal = (OAuth2ClientAuthenticationToken) authentication.getPrincipal();
         }
-
         if (clientPrincipal != null && clientPrincipal.isAuthenticated()) {
             return clientPrincipal;
         }
-
         throw new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_CLIENT);
     }
 

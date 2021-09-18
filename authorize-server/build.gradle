@@ -1,10 +1,10 @@
-bootJar{
+bootJar {
     archivesBaseName = 'authorize-server'
 }
 
-springBoot{
-    buildInfo{
-        properties{
+springBoot {
+    buildInfo {
+        properties {
             artifact = 'authorize-server'
             version = '1.0.0'
             group = 'oauth2'
@@ -13,12 +13,29 @@ springBoot{
     }
 }
 
+//log冲突
+configurations {
+    all*.exclude group:'org.springframework.boot',
+            module:'spring-boot-starter-logging'
+}
+
 dependencies {
+    implementation platform("com.yunmo.boot:application-dependencies:${yunmo_boot_version}")
+
+    implementation "com.yunmo.boot:rest-server-starter"
+    implementation "com.yunmo.boot:genrpc-starter"
+    implementation "com.yunmo:domain-commons"
+    implementation 'com.yunmo.core:user-api'
+
+    implementation 'org.mapstruct:mapstruct'
+
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+//    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.security:spring-security-oauth2-authorization-server:0.2.0'
 
-    runtimeOnly 'com.h2database:h2'
+    implementation 'org.springframework:spring-aspects:5.3.9'
+
+//    runtimeOnly 'com.h2database:h2'
 }

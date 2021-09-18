@@ -1,21 +1,73 @@
 package com.yunmo.auth.spring;
 
-import org.springframework.security.crypto.bcrypt.BCrypt;
+import com.yunmo.auth.configuration.expand.OAuth2ResourceOwnerPasswordAuthenticationToken;
+import com.yunmo.core.api.user.PersonnelService;
+import com.yunmo.core.api.user.UserAccountService;
+import com.yunmo.core.domain.user.AccountStatus;
+import com.yunmo.core.domain.user.Personnel;
+import com.yunmo.core.domain.user.UserAccount;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.authorization.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserPrincipalServiceImpl implements UserPrincipalService {
 
+    public static final String DOMAIN_PARAMETER = "domain";
+
+    @Autowired
+    UserAccountService userAccountService;
+
+    @Autowired
+    PersonnelService personnelService;
+
     @Override
     public DomainUser loadUserByUsername(String username) {
-        return new DomainUser(1, 1, 1L, "admin", "{bcrypt}$2a$10$kUupVuJ9I0VRDmLW0bmDXuLPDZdUCz2VG5BLHxSeWDFdqKcYlu9ey", true, true, true, true, new HashSet<>());
-    }
+        UserAccount userAccount = userAccountService.findByUsernameOrPhone(username);
+        if (userAccount == null) {
+            throw new UsernameNotFoundException(username);
+        }
 
+        Map<String, Object> parameters = (Map<String, Object>) ((OAuth2ClientAuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getDetails();
 
-    public static void main(String[] args) {
-        System.out.println(BCrypt.hashpw("admin", BCrypt.gensalt()));
+        var authorities = Optional.ofNullable(userAccount.getAuthorities()).map(a -> a.stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList()))
+                .orElse(new ArrayList<>());
+
+        Long userId = userAccount.getTenantId();
+        Long tenantId = userAccount.getTenantId();
+        Long domain = null;
+        String password = "{bcrypt}" + userAccount.getPassword();
+
+        if (parameters.containsKey(DOMAIN_PARAMETER)) {
+            long domainId = Long.parseLong(parameters.get(DOMAIN_PARAMETER).toString());
+            Personnel personnel = personnelService.findByEnterpriseIdAndUserId(domainId, userAccount.getTenantId());
+            if (personnel == null) {
+                throw new UsernameNotFoundException(username);
+            }
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + personnel.getRole()));
+
+            tenantId = personnel.getTenantId();
+            domain = personnel.getEnterpriseId();
+        }
+
+        return new DomainUser(userId, tenantId, domain,
+                userAccount.getAccountName(), password,
+                userAccount.getStatus() == AccountStatus.NORMAL,
+                true, true, userAccount.getStatus() != AccountStatus.LOCKED,
+                authorities);
     }
 
 }

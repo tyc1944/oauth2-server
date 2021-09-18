@@ -23,9 +23,21 @@ buildscript {
 
 allprojects {
     repositories {
+        mavenLocal()
         mavenCentral()
         maven {
-            url "https://plugins.gradle.org/m2/"
+            url "https://maven.aliyun.com/repository/public"
+        }
+        maven {
+            allowInsecureProtocol = true
+            credentials {
+                username 'maven'
+                password 'gV7woQWfT8'
+            }
+            url 'http://nexus.yunmotec.com:32055/repository/maven-public/'
+            authentication {
+                basic(BasicAuthentication)
+            }
         }
     }
 }

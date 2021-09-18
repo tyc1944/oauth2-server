@@ -2,10 +2,12 @@ package com.yunmo.auth.spring;
 
 import com.sun.security.auth.UserPrincipal;
 import com.yunmo.auth.configuration.expand.OAuth2ResourceOwnerPasswordAuthenticationProvider;
+import com.yunmo.domain.common.Tenant;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.OAuth2TokenType;
@@ -25,10 +27,10 @@ public class JwtCustomizerServiceImpl implements JwtCustomizer {
 
         AbstractAuthenticationToken token = null;
 
-        Authentication authenticataion = SecurityContextHolder.getContext().getAuthentication();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authenticataion instanceof OAuth2ClientAuthenticationToken) {
-            token = (OAuth2ClientAuthenticationToken) authenticataion;
+        if (authentication instanceof OAuth2ClientAuthenticationToken) {
+            token = (OAuth2ClientAuthenticationToken) authentication;
         }
 
         if (token != null) {
@@ -36,6 +38,7 @@ public class JwtCustomizerServiceImpl implements JwtCustomizer {
             if (token.isAuthenticated() && OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
                 Authentication usernamePasswordAuthentication = null;
                 AuthorizationGrantType authorizationGrantType = context.getAuthorizationGrantType();
+
                 if (authorizationGrantType == AuthorizationGrantType.AUTHORIZATION_CODE) {
                     usernamePasswordAuthentication = context.getPrincipal();
                 }
@@ -44,16 +47,21 @@ public class JwtCustomizerServiceImpl implements JwtCustomizer {
                     usernamePasswordAuthentication = context.get(OAuth2ResourceOwnerPasswordAuthenticationProvider.USERNAME_PASSWORD_AUTHENTICATION_KEY);
                 }
 
-                if (usernamePasswordAuthentication != null && usernamePasswordAuthentication instanceof UsernamePasswordAuthenticationToken) {
-                    DomainUser principal = (DomainUser) usernamePasswordAuthentication.getPrincipal();
-                    Long userId = principal.getUserId();
-                    Set<String> authorities = principal.getAuthorities().stream()
+                if (usernamePasswordAuthentication instanceof UsernamePasswordAuthenticationToken) {
+                    DomainUser domainUser = (DomainUser) usernamePasswordAuthentication.getPrincipal();
+                    Set<String> authorities = domainUser.getAuthorities().stream()
                             .map(GrantedAuthority::getAuthority)
                             .collect(Collectors.toSet());
-
+                    //自定义payload
                     JwtClaimsSet.Builder jwtClaimSetBuilder = context.getClaims();
                     jwtClaimSetBuilder.claim(OAuth2ParameterNames.SCOPE, authorities);
-                    jwtClaimSetBuilder.claim("userId", userId);
+                    jwtClaimSetBuilder.subject(String.valueOf(domainUser.getTenantId()));
+                    if (domainUser.getDomain() != null) {
+                        jwtClaimSetBuilder.claim(Tenant.CLAIM_DOMAIN, domainUser.getDomain());
+                    }
+                    if (authentication.getAuthorities() != null && !authentication.getAuthorities().isEmpty()) {
+                        jwtClaimSetBuilder.claim("authorities", AuthorityUtils.authorityListToSet(authentication.getAuthorities()));
+                    }
                 }
             }
         }

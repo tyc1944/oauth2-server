@@ -14,7 +14,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
@@ -23,7 +22,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -31,7 +29,6 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.server.authorization.*;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
@@ -53,20 +50,21 @@ public class AuthorizationServerConfig {
     @Autowired
     private JwtCustomizer jwtCustomizer;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Bean
-    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
+    public RegisteredClientRepository registeredClientRepository() {
         log.debug("in registeredClientRepository");
         RegisteredClient passwordClientRegistration = RegisteredClient.withId("1")
                 .clientId("iot")
-                .clientSecret("iot")
+                .clientSecret(passwordEncoder.encode("iot"))
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
                 .authorizationGrantType(AuthorizationGrantType.PASSWORD)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .tokenSettings(TokenSettings.builder().accessTokenTimeToLive(Duration.ofDays(1)).refreshTokenTimeToLive(Duration.ofDays(4)).build())
                 .build();
-        JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
-        registeredClientRepository.save(passwordClientRegistration);
-        return registeredClientRepository;
+        return new InMemoryRegisteredClientRepository(passwordClientRegistration);
     }
 
     @Bean
@@ -102,14 +100,15 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate, RegisteredClientRepository registeredClientRepository) {
-        return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
+    public OAuth2AuthorizationService memoryAuthorizationService() {
+        return new InMemoryOAuth2AuthorizationService();
     }
 
     @Bean
-    public OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate, RegisteredClientRepository registeredClientRepository) {
-        return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
+    public OAuth2AuthorizationConsentService memoryAuthorizationConsentService() {
+        return new InMemoryOAuth2AuthorizationConsentService();
     }
+
 
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
@@ -148,28 +147,13 @@ public class AuthorizationServerConfig {
         OAuth2AuthorizationService authorizationService = http.getSharedObject(OAuth2AuthorizationService.class);
         JwtEncoder jwtEncoder = http.getSharedObject(JwtEncoder.class);
         OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer = buildCustomizer();
-        OAuth2ResourceOwnerPasswordAuthenticationProvider resourceOwnerPasswordAuthenticationProvider =
-                new OAuth2ResourceOwnerPasswordAuthenticationProvider(authenticationManager, authorizationService, jwtEncoder);
+        OAuth2ResourceOwnerPasswordAuthenticationProvider resourceOwnerPasswordAuthenticationProvider = new OAuth2ResourceOwnerPasswordAuthenticationProvider(authenticationManager, authorizationService, jwtEncoder);
         if (jwtCustomizer != null) {
             resourceOwnerPasswordAuthenticationProvider.setJwtCustomizer(jwtCustomizer);
         }
         resourceOwnerPasswordAuthenticationProvider.setProviderSettings(providerSettings);
         // This will add new authentication provider in the list of existing authentication providers.
         http.authenticationProvider(resourceOwnerPasswordAuthenticationProvider);
-    }
-
-    @Bean
-    public EmbeddedDatabase embeddedDatabase() {
-        // @formatter:off
-        return new EmbeddedDatabaseBuilder()
-                .generateUniqueName(true)
-                .setType(EmbeddedDatabaseType.H2)
-                .setScriptEncoding("UTF-8")
-                .addScript("org/springframework/security/oauth2/server/authorization/oauth2-authorization-schema.sql")
-                .addScript("org/springframework/security/oauth2/server/authorization/oauth2-authorization-consent-schema.sql")
-                .addScript("org/springframework/security/oauth2/server/authorization/client/oauth2-registered-client-schema.sql")
-                .build();
-        // @formatter:on
     }
 
 }
