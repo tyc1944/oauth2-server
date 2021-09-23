@@ -8,3 +8,15 @@ logging:
     org.springframework.security: debug
     org.springframework.security.oauth2: debug
 #    org.springframework.boot.autoconfigure: DEBUG
+
+spring:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-admin-password: sa
+  redis:
+    database: 1
+    host: 10.234.60.170
+    password: 4CPAD2lWKV

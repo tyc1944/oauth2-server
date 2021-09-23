@@ -15,7 +15,9 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.server.authorization.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -56,6 +58,9 @@ public class JwtCustomizerServiceImpl implements JwtCustomizer {
                     JwtClaimsSet.Builder jwtClaimSetBuilder = context.getClaims();
                     jwtClaimSetBuilder.claim(OAuth2ParameterNames.SCOPE, authorities);
                     jwtClaimSetBuilder.subject(String.valueOf(domainUser.getTenantId()));
+                    //sessionId赋值jti
+                    jwtClaimSetBuilder.id(RequestContextHolder.currentRequestAttributes().getSessionId());
+
                     if (domainUser.getDomain() != null) {
                         jwtClaimSetBuilder.claim(Tenant.CLAIM_DOMAIN, domainUser.getDomain());
                     }

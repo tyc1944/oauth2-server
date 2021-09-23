@@ -35,7 +35,10 @@ dependencies {
 //    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.security:spring-security-oauth2-authorization-server:0.2.0'
 
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.session:spring-session-data-redis'
+
     implementation 'org.springframework:spring-aspects:5.3.9'
 
-//    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'com.h2database:h2'
 }

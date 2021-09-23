@@ -1,6 +1,5 @@
 package com.yunmo.auth.spring;
 
-import com.yunmo.auth.configuration.expand.OAuth2ResourceOwnerPasswordAuthenticationToken;
 import com.yunmo.core.api.user.PersonnelService;
 import com.yunmo.core.api.user.UserAccountService;
 import com.yunmo.core.domain.user.AccountStatus;
@@ -10,9 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.server.authorization.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
 import org.springframework.stereotype.Service;
 
@@ -39,8 +35,6 @@ public class UserPrincipalServiceImpl implements UserPrincipalService {
             throw new UsernameNotFoundException(username);
         }
 
-        Map<String, Object> parameters = (Map<String, Object>) ((OAuth2ClientAuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getDetails();
-
         var authorities = Optional.ofNullable(userAccount.getAuthorities()).map(a -> a.stream()
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList()))
@@ -51,17 +45,23 @@ public class UserPrincipalServiceImpl implements UserPrincipalService {
         Long domain = null;
         String password = "{bcrypt}" + userAccount.getPassword();
 
-        if (parameters.containsKey(DOMAIN_PARAMETER)) {
-            long domainId = Long.parseLong(parameters.get(DOMAIN_PARAMETER).toString());
-            Personnel personnel = personnelService.findByEnterpriseIdAndUserId(domainId, userAccount.getTenantId());
-            if (personnel == null) {
-                throw new UsernameNotFoundException(username);
-            }
-            authorities.add(new SimpleGrantedAuthority("ROLE_" + personnel.getRole()));
+//        Map<String, Object> parameters = (Map<String, Object>) (SecurityContextHolder.getContext().getAuthentication()).getDetails();
 
-            tenantId = personnel.getTenantId();
-            domain = personnel.getEnterpriseId();
-        }
+//        if (parameters.containsKey(DOMAIN_PARAMETER)) {
+//            long domainId = Long.parseLong(parameters.get(DOMAIN_PARAMETER).toString());
+//            Personnel personnel = personnelService.findByEnterpriseIdAndUserId(domainId, userAccount.getTenantId());
+//            if (personnel == null) {
+//                throw new UsernameNotFoundException(username);
+//            }
+//            authorities.add(new SimpleGrantedAuthority("ROLE_" + personnel.getRole()));
+//
+//            tenantId = personnel.getTenantId();
+//            domain = personnel.getEnterpriseId();
+//        }
+
+
+
+        authorities.add(new SimpleGrantedAuthority("USER"));
 
         return new DomainUser(userId, tenantId, domain,
                 userAccount.getAccountName(), password,

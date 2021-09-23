@@ -16,12 +16,19 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
+import org.springframework.security.web.session.SimpleRedirectSessionInformationExpiredStrategy;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -52,14 +59,12 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        log.debug("in configure HttpSecurity");
-        http.authorizeRequests(authorizeRequests -> authorizeRequests.requestMatchers(EndpointRequest.toAnyEndpoint(), PathRequest.toH2Console()).permitAll()
-                        .anyRequest().authenticated()
+        http
+                .authorizeRequests(authorizeRequests ->
+                        authorizeRequests.anyRequest().authenticated()
                 )
                 .formLogin(withDefaults())
-                .csrf().ignoringRequestMatchers(PathRequest.toH2Console())
-                .and().headers().frameOptions().sameOrigin();
-
+                .sessionManagement().maximumSessions(1).expiredUrl("/expired").maxSessionsPreventsLogin(true);;
         return http.build();
     }
 
@@ -73,6 +78,16 @@ public class SecurityConfiguration {
         DefaultBearerTokenResolver resolver = new DefaultBearerTokenResolver();
         resolver.setAllowUriQueryParameter(true);
         return resolver;
+    }
+
+    @Bean
+    UserDetailsService users() {
+        UserDetails user = User.withDefaultPasswordEncoder()
+                .username("user1")
+                .password("password")
+                .roles("USER")
+                .build();
+        return new InMemoryUserDetailsManager(user);
     }
 
 }

@@ -38,6 +38,8 @@ import org.springframework.security.oauth2.server.authorization.web.authenticati
 import org.springframework.security.oauth2.server.authorization.web.authentication.OAuth2ClientCredentialsAuthenticationConverter;
 import org.springframework.security.oauth2.server.authorization.web.authentication.OAuth2RefreshTokenAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.NullSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.time.Duration;
@@ -86,7 +88,8 @@ public class AuthorizationServerConfig {
         http.requestMatcher(endpointsMatcher)
                 .authorizeRequests(authorizeRequests -> authorizeRequests.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
-                .apply(authorizationServerConfigurer);
+                .apply(authorizationServerConfigurer)
+                .and().sessionManagement().maximumSessions(1).expiredUrl("/expired").maxSessionsPreventsLogin(true);
 
         SecurityFilterChain securityFilterChain = http.formLogin(Customizer.withDefaults()).build();
 
@@ -97,6 +100,11 @@ public class AuthorizationServerConfig {
         addCustomOAuth2ResourceOwnerPasswordAuthenticationProvider(http);
 
         return securityFilterChain;
+    }
+
+    @Bean
+    public SecurityContextRepository securityContextRepository(){
+        return new NullSecurityContextRepository();
     }
 
     @Bean
