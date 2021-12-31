@@ -1,66 +1,51 @@
-wrapper {
-    gradleVersion = "6.8"
+plugins {
+    id 'java'
+    id 'idea'
+    id "org.springframework.boot" version "2.6.2"
+    id "io.spring.dependency-management" version "1.0.11.RELEASE"
 }
 
-buildscript {
-    ext {
-        springBootVersion = '2.5.4'
-    }
+group 'org.example'
+version '1.0-SNAPSHOT'
 
-    repositories {
-        mavenCentral()
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
 
-    dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-        classpath("io.spring.gradle:dependency-management-plugin:1.0.11.RELEASE")
-        classpath("io.franzbecker:gradle-lombok:4.0.0")
-    }
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.security:spring-security-oauth2-authorization-server:0.2.1'
+
+    implementation 'org.projectlombok:lombok:1.18.20'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
 }
 
-allprojects {
-    repositories {
-        mavenLocal()
-        mavenCentral()
-        maven {
-            url "https://maven.aliyun.com/repository/public"
-        }
-        maven {
-            allowInsecureProtocol = true
-            credentials {
-                username 'maven'
-                password 'gV7woQWfT8'
-            }
-            url 'http://nexus.yunmotec.com:32055/repository/maven-public/'
-            authentication {
-                basic(BasicAuthentication)
-            }
-        }
-    }
+test {
+    useJUnitPlatform()
 }
 
-subprojects {
-    apply plugin: 'java'
-    apply plugin: 'java-library'
-    apply plugin: 'idea'
-    apply plugin: 'org.springframework.boot'
-    apply plugin: 'io.spring.dependency-management'
-    apply plugin: 'io.franzbecker.gradle-lombok'
 
-    sourceCompatibility = "11"
-    targetCompatibility = "11"
-    [compileJava, compileTestJava]*.options*.encoding = "UTF-8"
 
-    dependencies {
-        implementation 'org.apache.commons:commons-lang3:3.12.0'
-        implementation 'org.apache.commons:commons-collections4:4.4'
-        testImplementation 'org.springframework.boot:spring-boot-starter-test'
-        annotationProcessor 'org.projectlombok:lombok:1.18.20'
-        compileOnly 'org.projectlombok:lombok:1.18.20'
-        testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
-        testCompileOnly 'org.projectlombok:lombok:1.18.20'
+configurations {
+    all*.exclude group:'org.springframework.boot',
+            module:'spring-boot-starter-logging'
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        url "https://maven.aliyun.com/repository/public"
+    }
+    maven {
+        allowInsecureProtocol = true
+        credentials {
+            username 'maven'
+            password 'gV7woQWfT8'
+        }
+        url 'http://nexus.yunmotec.com:32055/repository/maven-public/'
+        authentication {
+            basic(BasicAuthentication)
+        }
     }
 }
