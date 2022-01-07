@@ -15,7 +15,7 @@ public class TenantTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingC
     public void customize(JwtEncodingContext context) {
         context.getClaims().claims(claims -> {
             var principal = (DomainUser) context.getPrincipal().getPrincipal();
-            String sub = principal.getUsername();
+            long sub = principal.getId();
             String scope = principal.getAuthorities().stream()
                     .map(a->a.getAuthority())
                     .filter(a->context.getAuthorizedScopes().contains(a))
