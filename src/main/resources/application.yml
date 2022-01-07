@@ -1,8 +1,2 @@
 server:
   port: 9000
-
-spring:
-  redis:
-    database: 1
-    host: core-redis-master
-    password: 4CPAD2lWKV
