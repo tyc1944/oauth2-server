@@ -10,12 +10,15 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2ConfigurationUtils;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
+import org.springframework.security.oauth2.server.authorization.config.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.web.authentication.*;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
@@ -24,11 +27,17 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.UUID;
 
 @Configuration
 public class AuthorizationServerConfiguration extends WebSecurityConfigurerAdapter {
+
+    @Bean
+    public PasswordEncoder encoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -66,11 +75,12 @@ public class AuthorizationServerConfiguration extends WebSecurityConfigurerAdapt
     public RegisteredClientRepository registeredClientRepository() {
         RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("iot")
-                .clientSecret("{noop}iot")
+                .clientSecret("$2a$10$X8piMK5fKCdJitCAQX4nSOJv9d1he2BsaRhu4y.LIndg/a/RDF59K")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .authorizationGrantType(AuthorizationGrantType.PASSWORD)
+                .tokenSettings(getTokenSettings())
                 .redirectUri("http://127.0.0.1:8080/login/oauth2/code/articles-client-oidc")
                 .redirectUri("http://127.0.0.1:8080/authorized")
                 .scope("ALL")
@@ -78,6 +88,13 @@ public class AuthorizationServerConfiguration extends WebSecurityConfigurerAdapt
                 .scope("B")
                 .build();
         return new InMemoryRegisteredClientRepository(registeredClient);
+    }
+
+    @Bean
+    public TokenSettings getTokenSettings() {
+        return TokenSettings.builder()
+                .accessTokenTimeToLive(Duration.ofMinutes(1))
+                .build();
     }
 
     @Bean
