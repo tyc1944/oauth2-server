@@ -1,0 +1,39 @@
+#variables:
+#  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+#
+#before_script:
+#  - export GRADLE_USER_HOME=`pwd`/.gradle
+
+stages:
+  - build
+
+
+build oauth2-server dev:
+  image: registry.yunmotec.com:1443/gradle:7.3.3-jdk11
+  tags:
+    - java
+  stage: build
+  script:
+    - gradle jib -Djib.to.image=registry.yunmotec.com:1443/$CI_PROJECT_NAME-admin:$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA -Djib.disableUpdateChecks=true -Djib.allowInsecureRegistries=true
+  cache:
+    key: "$CI_PROJECT_NAME"
+    paths:
+      - build
+      - .gradle
+  only:
+    - kexing
+
+build oauth2-server qa:
+  image: registry.yunmotec.com:1443/gradle:jdk11
+  tags:
+    - java
+  stage: build
+  script:
+    - gradle jib -Djib.to.image=registry.yunmotec.com:1443/$CI_PROJECT_NAME-admin:$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA
+  cache:
+    key: "$CI_PROJECT_NAME"
+    paths:
+      - build
+      - .gradle
+  only:
+    - kexing-qa
