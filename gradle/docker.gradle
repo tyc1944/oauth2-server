@@ -3,7 +3,7 @@ jib {
         image = 'registry.yunmotec.com:1443/openjdk:11-jre-ffmpeg'
     }
     container {
-        ports = ['9000' ]
+        ports = ['9000']
     }
 }
 
