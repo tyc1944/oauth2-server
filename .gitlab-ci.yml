@@ -29,7 +29,7 @@ build oauth2-server qa:
     - java
   stage: build
   script:
-    - gradle jib -Djib.to.image=registry.yunmotec.com:1443/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME-$CI_PIPELINE_IID
+    - gradle jib -Djib.to.image=registry.yunmotec.com:1443/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME-$CI_PIPELINE_IID -Djib.disableUpdateChecks=true -Djib.allowInsecureRegistries=true
   cache:
     key: "$CI_PROJECT_NAME"
     paths:
