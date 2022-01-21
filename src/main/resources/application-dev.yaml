@@ -1,6 +1,6 @@
 spring:
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://10.234.25.102:3306/kexing_management
+    url: jdbc:mysql://kexing-mysql:3306/kexing_management
     username: kexing_management
     password: mlq9u9k3f0
