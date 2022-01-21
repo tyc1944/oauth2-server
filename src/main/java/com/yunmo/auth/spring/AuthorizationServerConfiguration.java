@@ -74,8 +74,8 @@ public class AuthorizationServerConfiguration extends WebSecurityConfigurerAdapt
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
         RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                .clientId("iot")
-                .clientSecret("$2a$10$X8piMK5fKCdJitCAQX4nSOJv9d1he2BsaRhu4y.LIndg/a/RDF59K")
+                .clientId("kexing")
+                .clientSecret("$2a$10$NRVwXjozNo/7kbDf5qqQCuZAO5O79Dwx9KSlwzBpprHdqjR5pRLeC")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
