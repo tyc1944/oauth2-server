@@ -4,8 +4,13 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
@@ -21,10 +26,14 @@ import org.springframework.security.oauth2.server.authorization.config.ProviderS
 import org.springframework.security.oauth2.server.authorization.config.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.web.authentication.*;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.util.ResourceUtils;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
@@ -97,9 +106,34 @@ public class AuthorizationServerConfiguration extends WebSecurityConfigurerAdapt
                 .build();
     }
 
+    @SneakyThrows // TODO_LH: 2022/1/21 优化 使用本地key
+    public RSAKey  getRSAKey(){
+        char[] password = "z670m5j43k".toCharArray();
+
+        KeyStore ks = KeyStore.getInstance("JKS");
+        try (FileInputStream fis = new FileInputStream(ResourceUtils.getFile("classpath:oauth2-server.jks"))) {
+            ks.load(fis, password);
+        }
+
+        KeyStore.ProtectionParameter protParam =
+                new KeyStore.PasswordProtection(password);
+
+        // get my private key
+        String alias = "oauth2-server";
+        KeyStore.PrivateKeyEntry pkEntry = (KeyStore.PrivateKeyEntry)
+                ks.getEntry(alias, protParam);
+        RSAPrivateKey privateKey = (RSAPrivateKey)pkEntry.getPrivateKey();
+        RSAPublicKey publicKey = (RSAPublicKey) ks.getCertificate("oauth2-server").getPublicKey();
+        return new RSAKey.Builder(publicKey)
+                .privateKey(privateKey)
+                .keyID("954fdb04-ac97-42e0-95db-3f44aa667bf1")
+                .build();
+
+    }
+
     @Bean
-    public JWKSource<SecurityContext> jwkSource() throws NoSuchAlgorithmException {
-        RSAKey rsaKey = generateRsa();
+    public JWKSource<SecurityContext> jwkSource() {
+        RSAKey rsaKey = getRSAKey();
         JWKSet jwkSet = new JWKSet(rsaKey);
         return (jwkSelector, securityContext) -> jwkSelector.select(jwkSet);
     }
