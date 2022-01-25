@@ -102,7 +102,7 @@ public class AuthorizationServerConfiguration extends WebSecurityConfigurerAdapt
     @Bean
     public TokenSettings getTokenSettings() {
         return TokenSettings.builder()
-                .accessTokenTimeToLive(Duration.ofHours(24))
+                .accessTokenTimeToLive(Duration.ofDays(30))
                 .build();
     }
 
