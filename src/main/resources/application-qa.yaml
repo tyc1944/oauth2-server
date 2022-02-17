@@ -1,0 +1,6 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://iot-mysql.iot-test:3306/kexing_management
+    username: kexing_management
+    password: mlq9u9k3f0
