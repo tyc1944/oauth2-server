@@ -4,13 +4,11 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.yunmo.auth.util.privateKeyUtil;
 import lombok.SneakyThrows;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
@@ -26,22 +24,40 @@ import org.springframework.security.oauth2.server.authorization.config.ProviderS
 import org.springframework.security.oauth2.server.authorization.config.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.web.authentication.*;
 import org.springframework.security.web.util.matcher.RequestMatcher;
-import org.springframework.util.ResourceUtils;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.*;
-import java.security.cert.CertificateException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.UUID;
 
+import static com.yunmo.auth.util.PublicKeyUtil.readPublicKey;
+
 @Configuration
 public class AuthorizationServerConfiguration extends WebSecurityConfigurerAdapter {
+    @Value("${jwt.token.verification-key}")
+    private String verificationKey;
+    @Value("${jwt.token.signing-key}")
+    private String signingKey;
+
+    private static RSAKey generateRsa() throws NoSuchAlgorithmException {
+        KeyPair keyPair = generateRsaKey();
+        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+        return new RSAKey.Builder(publicKey)
+                .privateKey(privateKey)
+                .keyID(UUID.randomUUID().toString())
+                .build();
+    }
+
+    private static KeyPair generateRsaKey() throws NoSuchAlgorithmException {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(2048);
+        return keyPairGenerator.generateKeyPair();
+    }
 
     @Bean
     public PasswordEncoder encoder() {
@@ -54,14 +70,14 @@ public class AuthorizationServerConfiguration extends WebSecurityConfigurerAdapt
                 new OAuth2AuthorizationServerConfigurer<>();
         RequestMatcher endpointsMatcher = authorizationServerConfigurer
                 .getEndpointsMatcher();
-        authorizationServerConfigurer.tokenEndpoint(configurer->{
-                configurer
-                        .accessTokenRequestConverter(new DelegatingAuthenticationConverter(Arrays.asList(
-                                new OAuth2AuthorizationCodeAuthenticationConverter(),
-                                new OAuth2RefreshTokenAuthenticationConverter(),
-                                new OAuth2ClientCredentialsAuthenticationConverter(),
-                                new OAuth2PasswordAuthenticationConverter())));
-            }
+        authorizationServerConfigurer.tokenEndpoint(configurer -> {
+                    configurer
+                            .accessTokenRequestConverter(new DelegatingAuthenticationConverter(Arrays.asList(
+                                    new OAuth2AuthorizationCodeAuthenticationConverter(),
+                                    new OAuth2RefreshTokenAuthenticationConverter(),
+                                    new OAuth2ClientCredentialsAuthenticationConverter(),
+                                    new OAuth2PasswordAuthenticationConverter())));
+                }
         );
 
         http.authenticationProvider(OAuth2ConfigurationUtils.passwordAuthenticationProvider(http, authenticationManager()));
@@ -106,26 +122,10 @@ public class AuthorizationServerConfiguration extends WebSecurityConfigurerAdapt
                 .build();
     }
 
-    @SneakyThrows // TODO_LH: 2022/1/21 优化 使用本地key
-    public RSAKey  getRSAKey(){
-        char[] password = "z670m5j43k".toCharArray();
-
-        KeyStore ks = KeyStore.getInstance("JKS");
-        try (FileInputStream fis = new FileInputStream(ResourceUtils.getFile("classpath:oauth2-server.jks"))) {
-            ks.load(fis, password);
-        }
-
-        KeyStore.ProtectionParameter protParam =
-                new KeyStore.PasswordProtection(password);
-
-        // get my private key
-        String alias = "oauth2-server";
-        KeyStore.PrivateKeyEntry pkEntry = (KeyStore.PrivateKeyEntry)
-                ks.getEntry(alias, protParam);
-        RSAPrivateKey privateKey = (RSAPrivateKey)pkEntry.getPrivateKey();
-        RSAPublicKey publicKey = (RSAPublicKey) ks.getCertificate("oauth2-server").getPublicKey();
-        return new RSAKey.Builder(publicKey)
-                .privateKey(privateKey)
+    @SneakyThrows
+    public RSAKey getRSAKey() {
+        return new RSAKey.Builder(readPublicKey(verificationKey))
+                .privateKey(privateKeyUtil.loadKey(signingKey))
                 .keyID("954fdb04-ac97-42e0-95db-3f44aa667bf1")
                 .build();
 
@@ -138,19 +138,4 @@ public class AuthorizationServerConfiguration extends WebSecurityConfigurerAdapt
         return (jwkSelector, securityContext) -> jwkSelector.select(jwkSet);
     }
 
-    private static RSAKey generateRsa() throws NoSuchAlgorithmException {
-        KeyPair keyPair = generateRsaKey();
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-        return new RSAKey.Builder(publicKey)
-                .privateKey(privateKey)
-                .keyID(UUID.randomUUID().toString())
-                .build();
-    }
-
-    private static KeyPair generateRsaKey() throws NoSuchAlgorithmException {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(2048);
-        return keyPairGenerator.generateKeyPair();
-    }
 }
