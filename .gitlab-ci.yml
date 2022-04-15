@@ -24,7 +24,7 @@ build oauth2-server dev:
     - kexing-dev
 
 build oauth2-server qa:
-  image: registry.yunmotec.com:1443/gradle:jdk11
+  image: registry.yunmotec.com:1443/gradle:7.3.3-jdk11
   tags:
     - java
   stage: build
@@ -39,7 +39,7 @@ build oauth2-server qa:
     - kexing-qa
 
 build oauth2-server prod:
-  image: registry.yunmotec.com:1443/gradle:jdk11
+  image: registry.yunmotec.com:1443/gradle:7.3.3-jdk11
   tags:
     - java
   stage: build
