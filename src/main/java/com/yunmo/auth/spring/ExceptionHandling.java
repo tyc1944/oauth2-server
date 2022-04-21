@@ -22,7 +22,11 @@ public class ExceptionHandling implements ProblemHandling , SecurityAdviceTrait 
     public ResponseEntity<Problem> handleEntityNotFound(
             final BadCredentialsException exception,
             final NativeWebRequest request) {
-        return create(Status.UNAUTHORIZED, exception, request);
+        return ResponseEntity.status(Status.UNAUTHORIZED.getStatusCode()).body(Problem.builder()
+                .withDetail("账户或密码错误")
+                .withStatus(Status.UNAUTHORIZED)
+                .withTitle(Status.UNAUTHORIZED.getReasonPhrase())
+                .build());
     }
 
     @ExceptionHandler
