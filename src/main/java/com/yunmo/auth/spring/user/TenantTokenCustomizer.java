@@ -30,7 +30,7 @@ public class TenantTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingC
             claims.remove(JwtClaimNames.AUD);
             claims.remove(JwtClaimNames.NBF);
             claims.remove(JwtClaimNames.ISS);
-            claims.remove(JwtClaimNames.IAT);
+//            claims.remove(JwtClaimNames.IAT);
 
             claims.put(JwtClaimNames.JTI, UUID.randomUUID());
         });
