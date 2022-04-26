@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Member;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -67,16 +68,8 @@ public class UserDetailServiceImpl implements UserDetailsService {
            }
         }
 
-        String[] segments = username.split(DOMAIN_DELIMITER); //支持username中加入domain
-        if(segments.length > 1) {
-            String domain = segments[0];
-            username = segments[1];
-            return new DomainUser(userAccount.getId(), Long.valueOf(domain), username,  userAccount.getPassword(),
-                    userAccount.isEnabled(), true, true, true,
-                    List.of());
-        }
 
-        return new DomainUser(userAccount.getId(),null, username, userAccount.getPassword(),
+        return new DomainUser(userAccount.getId(),1L, username, userAccount.getPassword(),
                 userAccount.isEnabled(), true, true,true,
                 List.of());
     }
