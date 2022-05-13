@@ -53,19 +53,17 @@ public class UserDetailServiceImpl implements UserDetailsService {
         }
 
         if (userAccount == null) {
-           try {
-               Staff staff = getStaffId(username);
-               if (staff == null) {
-                   throw new UsernameNotFoundException("用户名不存在");
-               }
-               try {
-                   userAccount = jdbcTemplate.queryForObject(SELECT_USER_ACCOUNT_SQL_BY_STAFF_ID, new BeanPropertyRowMapper<UserAccount>(UserAccount.class), staff.getId());
-               } catch (IncorrectResultSizeDataAccessException e) {
-                   throw new IncorrectResultSizeDataAccessException("账号数据存在多条对应员工编号",1);
-               }
-           } catch (EmptyResultDataAccessException e) {
-               throw new UsernameNotFoundException("用户名不存在");
-           }
+            Staff staff = getStaffId(username);
+            if (staff == null) {
+                throw new UsernameNotFoundException("用户名不存在");
+            }
+            try {
+                userAccount = jdbcTemplate.queryForObject(SELECT_USER_ACCOUNT_SQL_BY_STAFF_ID, new BeanPropertyRowMapper<UserAccount>(UserAccount.class), staff.getId());
+            } catch (EmptyResultDataAccessException e) {
+                throw new UsernameNotFoundException("用户名不存在");
+            } catch (IncorrectResultSizeDataAccessException e) {
+                throw new IncorrectResultSizeDataAccessException("账号数据存在多条对应员工编号", 1);
+            }
         }
 
 
