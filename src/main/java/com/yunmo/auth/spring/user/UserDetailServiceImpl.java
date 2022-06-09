@@ -25,11 +25,11 @@ import java.util.List;
 public class UserDetailServiceImpl implements UserDetailsService {
     public static final String DOMAIN_DELIMITER  = "/";
 
-    public static final String SELECT_USER_ACCOUNT_SQL_BY_ACCOUNT_NAME = "SELECT  id, account_name, enabled, password FROM user_account as ua where ua.account_name = ?";
+    public static final String SELECT_USER_ACCOUNT_SQL_BY_ACCOUNT_NAME = "SELECT  id, account_name, enabled, password FROM user_account as ua where ua.account_name = ? and ua.deleted=false";
 
-    public static final String SELECT_USER_ACCOUNT_SQL_BY_STAFF_ID = "SELECT  id, account_name, enabled, password FROM user_account as ua where ua.staff_id = ?";
+    public static final String SELECT_USER_ACCOUNT_SQL_BY_STAFF_ID = "SELECT  id, account_name, enabled, password FROM user_account as ua where ua.staff_id = ? and ua.deleted=false";
 
-    public static final String SELECT_STAFF_BY_PHONE = "SELECT  id  FROM staff  where phone = ?";
+    public static final String SELECT_STAFF_BY_PHONE = "SELECT  id  FROM staff  where phone = ? and staff.deleted=false";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -70,20 +70,6 @@ public class UserDetailServiceImpl implements UserDetailsService {
         return new DomainUser(userAccount.getId(),1L, username, userAccount.getPassword(),
                 userAccount.isEnabled(), true, true,true,
                 List.of());
-    }
-
-    public static class CustomerRowMapper implements RowMapper<UserAccount> {
-
-        @Override
-        public UserAccount mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return UserAccount.builder()
-                    .id(rs.getLong("id"))
-                    .accountName(rs.getString("account_name"))
-                    .enabled(rs.getBoolean("enabled"))
-                    .password(rs.getString("password"))
-                    .build();
-
-        }
     }
 
     @Data
