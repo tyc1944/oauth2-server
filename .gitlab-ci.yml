@@ -21,7 +21,7 @@ build oauth2-server dev:
       - build
       - .gradle
   only:
-    - kexing-dev
+    - dcs-dev
 
 build oauth2-server qa:
   image: registry.yunmotec.com:1443/gradle:7.3.3-jdk11
@@ -36,23 +36,23 @@ build oauth2-server qa:
       - build
       - .gradle
   only:
-    - kexing-qa
+    - dcs-qa
 
-build oauth2-server prod:
-  image: registry.yunmotec.com:1443/gradle:7.3.3-jdk11
-  tags:
-    - java
-  stage: build
-  script:
-    - gradle jib -Djib.to.auth.username="泉信技术" -Djib.to.auth.password="mBB@vY@n5xQmXmh" -Djib.to.image=registry.cn-beijing.aliyuncs.com/quanxinbim/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME.$CI_PIPELINE_IID
-  cache:
-    key: "$CI_PROJECT_NAME"
-    paths:
-      - build
-      - .gradle
-  except:
-    - develop
-    - /^release.*$/
-    - /^feature.*$/
-  only:
-    - tags
+#build oauth2-server prod:
+#  image: registry.yunmotec.com:1443/gradle:7.3.3-jdk11
+#  tags:
+#    - java
+#  stage: build
+#  script:
+#    - gradle jib -Djib.to.auth.username="泉信技术" -Djib.to.auth.password="mBB@vY@n5xQmXmh" -Djib.to.image=registry.cn-beijing.aliyuncs.com/quanxinbim/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME.$CI_PIPELINE_IID
+#  cache:
+#    key: "$CI_PROJECT_NAME"
+#    paths:
+#      - build
+#      - .gradle
+#  except:
+#    - develop
+#    - /^release.*$/
+#    - /^feature.*$/
+#  only:
+#    - tags

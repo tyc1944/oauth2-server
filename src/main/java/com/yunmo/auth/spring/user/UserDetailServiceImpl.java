@@ -25,24 +25,10 @@ import java.util.List;
 public class UserDetailServiceImpl implements UserDetailsService {
     public static final String DOMAIN_DELIMITER  = "/";
 
-    public static final String SELECT_USER_ACCOUNT_SQL_BY_ACCOUNT_NAME = "SELECT  id, account_name, enabled, password FROM user_account as ua where ua.account_name = ? and ua.deleted=false";
-
-    public static final String SELECT_USER_ACCOUNT_SQL_BY_STAFF_ID = "SELECT  id, account_name, enabled, password FROM user_account as ua where ua.staff_id = ? and ua.deleted=false";
-
-    public static final String SELECT_STAFF_BY_PHONE = "SELECT  id  FROM staff  where phone = ? and staff.deleted=false";
+    public static final String SELECT_USER_ACCOUNT_SQL_BY_ACCOUNT_NAME = "SELECT  id, account_name, enabled, password FROM user_account as ua where ua.account_name = ? ";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
-
-    public Staff getStaffId(String phone) {
-        try {
-            return jdbcTemplate.queryForObject(SELECT_STAFF_BY_PHONE, new BeanPropertyRowMapper<Staff>(Staff.class), phone);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
-        } catch (IncorrectResultSizeDataAccessException e) {
-            throw new IncorrectResultSizeDataAccessException("员工数据存在多条对应记录",1);
-        }
-    }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -50,24 +36,11 @@ public class UserDetailServiceImpl implements UserDetailsService {
         try {
             userAccount = jdbcTemplate.queryForObject(SELECT_USER_ACCOUNT_SQL_BY_ACCOUNT_NAME, new BeanPropertyRowMapper<UserAccount>(UserAccount.class),username);
         } catch (EmptyResultDataAccessException e) {
-        }
-
-        if (userAccount == null) {
-            Staff staff = getStaffId(username);
-            if (staff == null) {
-                throw new UsernameNotFoundException("用户名不存在");
-            }
-            try {
-                userAccount = jdbcTemplate.queryForObject(SELECT_USER_ACCOUNT_SQL_BY_STAFF_ID, new BeanPropertyRowMapper<UserAccount>(UserAccount.class), staff.getId());
-            } catch (EmptyResultDataAccessException e) {
-                throw new UsernameNotFoundException("用户名不存在");
-            } catch (IncorrectResultSizeDataAccessException e) {
-                throw new IncorrectResultSizeDataAccessException("账号数据存在多条对应员工编号", 1);
-            }
+            throw new UsernameNotFoundException("用户名不存在");
         }
 
 
-        return new DomainUser(userAccount.getId(),1L, username, userAccount.getPassword(),
+        return new DomainUser(userAccount.getId(),null, username, userAccount.getPassword(),
                 userAccount.isEnabled(), true, true,true,
                 List.of());
     }
