@@ -35,18 +35,24 @@ public class UserDetailServiceImpl implements UserDetailsService {
         }
 
         if (userAccount == null) {
-            try {
-                userAccount = jdbcTemplate.queryForObject(SELECT_USER_ACCOUNT_SQL_BY_PHONE, new BeanPropertyRowMapper<UserAccount>(UserAccount.class), username);
-            } catch (EmptyResultDataAccessException e) {
-                throw new UsernameNotFoundException("手机号不存在");
-            } catch (IncorrectResultSizeDataAccessException e) {
-                throw new IncorrectResultSizeDataAccessException("手机关联多个账号数据", 1);
-            }
+            userAccount = getUserAccountByPhone(username);
         }
 
         return new DomainUser(userAccount.getId(), null, username, userAccount.getPassword(),
                 userAccount.isEnabled(), true, true, true,
                 List.of());
+    }
+
+    private UserAccount getUserAccountByPhone(String username) {
+        UserAccount userAccount;
+        try {
+            userAccount = jdbcTemplate.queryForObject(SELECT_USER_ACCOUNT_SQL_BY_PHONE, new BeanPropertyRowMapper<UserAccount>(UserAccount.class), username);
+        } catch (EmptyResultDataAccessException e) {
+            throw new UsernameNotFoundException("手机号不存在");
+        } catch (IncorrectResultSizeDataAccessException e) {
+            throw new IncorrectResultSizeDataAccessException("手机关联多个账号数据", 1);
+        }
+        return userAccount;
     }
 
     @Data
