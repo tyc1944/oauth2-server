@@ -38,7 +38,7 @@ public class UserDetailServiceImpl implements UserDetailsService {
             try {
                 userAccount = jdbcTemplate.queryForObject(SELECT_USER_ACCOUNT_SQL_BY_PHONE, new BeanPropertyRowMapper<UserAccount>(UserAccount.class), username);
             } catch (EmptyResultDataAccessException e) {
-                throw new UsernameNotFoundException("用户名不存在");
+                throw new UsernameNotFoundException("手机号不存在");
             } catch (IncorrectResultSizeDataAccessException e) {
                 throw new IncorrectResultSizeDataAccessException("手机关联多个账号数据", 1);
             }
